@@ -1,0 +1,7 @@
+AD + PCA + bvFTD: https://doi.org/10.1186/s13195-025-01872-x
+SD split: https://radiopaedia.org/articles/semantic-dementia-2
+PCA split: https://radiopaedia.org/articles/posterior-cortical-atrophy?lang=us
+AD: https://radiopaedia.org/articles/alzheimer-disease-1?lang=us
+FTD split (some symmetrical, some more left or right): https://www.sciencedirect.com/science/article/pii/S0197458012002163
+bvFTD: https://pmc.ncbi.nlm.nih.gov/articles/PMC10502637/
+AD: https://doi.org/10.1038/srep46263
