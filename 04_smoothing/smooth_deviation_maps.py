@@ -1,30 +1,16 @@
 """
-Surface smoothing of the SCSR deviation maps on fsaverage5.
+Smooth the SCSR deviation maps on fsaverage5 (mri_surf2surf, 5 mm FWHM).
 
-The unsmoothed deviation maps produced by sample_scsr.py are smoothed on
-the fsaverage5 surface with FreeSurfer's ``mri_surf2surf`` (Gaussian
-kernel, default FWHM = 5 mm). Smoothing is restricted to the cortex
-label without the "unknown" (medial wall) and "corpuscallosum" parcels,
-so values from the excluded medial wall do not bleed into the cortex.
+Smoothing is restricted to the cortex label without "unknown" and
+"corpuscallosum", so that nothing from the medial wall gets into the maps.
+Needs FreeSurfer 7.2. Subjects that are already in the output file are skipped.
 
-Inputs
-    --input-npy      lh and rh .npy arrays (n_subjects, 10242), unsmoothed
-    --id-file        CSV row-aligned with the arrays; the subject key is
-                     taken from PTID, IMAGEUID or new_id (first one present)
-    --output-dir     output folder
-    --freesurfer-home  FreeSurfer installation (default: $FREESURFER_HOME);
-                     fsaverage5 is read from $FREESURFER_HOME/subjects
+Input:  --input-npy  lh and rh arrays (n_subjects, 10242) from sample_scsr.py
+        --id-file    csv row-aligned with the arrays (PTID, IMAGEUID or new_id)
+Output: zscores.fwhm5.fsavg5.h5 (one group per subject with "lh" and "rh")
 
-Output
-    zscores.fwhm{FWHM}.fsavg5.h5 with one group per subject and the datasets
-    "lh" and "rh" (10,242 vertices each). Subjects already in the file are
-    skipped. The smoothed maps were exported to
-    zscores.fwhm{FWHM}.fsavg5.{hemi}.npy arrays (rows in metadata order) for
-    the downstream analysis.
-
-Usage
-    python smooth_deviation_maps.py --input-npy lh.npy rh.npy \
-        --id-file meta.csv --output-dir out/ [--fwhm 5]
+Usage:  python smooth_deviation_maps.py --input-npy lh.npy rh.npy \
+            --id-file meta.csv --output-dir out/ [--fwhm 5]
 """
 
 import argparse

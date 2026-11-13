@@ -1,36 +1,17 @@
 """
-Resample FreeSurfer cortical thickness to fsaverage6 / fsaverage5.
+Resample FreeSurfer cortical thickness to fsaverage6 (mri_surf2surf, 5 mm
+FWHM, cortex only) and keep the first 10,242 vertices as the fsaverage5 map.
 
-For every subject listed in the ID file, the native-space thickness map
-(surf/{hemi}.thickness of a FreeSurfer 7.2 subject directory) is mapped to
-fsaverage6 with ``mri_surf2surf`` and smoothed on the target surface with a
-Gaussian kernel (default FWHM = 5 mm, matching the Ecker et al. expression
-maps). Because the icosahedral fsaverage surfaces are nested, the first
-10,242 fsaverage6 vertices are exactly the fsaverage5 (ico5) vertices, so
-the fsaverage5 map is obtained by truncation.
+Needs FreeSurfer 7.2. If a subject has no {hemi}.cortex.label it is built from
+the aparc annotation. Subjects that are already in the output file are skipped.
 
-If a subject has no ``label/{hemi}.cortex.label``, it is created from the
-subject's aparc annotation (all vertices not labeled "unknown") so that
-``--cortex`` can restrict smoothing to the cortex.
+Input:  --subjects-dir  FreeSurfer SUBJECTS_DIR(s)
+        --id-file       csv with IMAGEUID (subject folder), optional PTID and DX
+Output: thickness.fwhm5.fsavg6.h5 and thickness.fwhm5.fsavg5.h5
+        (one group per subject with "lh" and "rh")
 
-Inputs
-    --subjects-dir   one or more FreeSurfer SUBJECTS_DIRs (searched in order)
-    --id-file        CSV with an IMAGEUID column (FreeSurfer subject folder
-                     name) and optionally PTID and DX columns
-    --output-dir     output folder
-    --freesurfer-home  FreeSurfer installation (default: $FREESURFER_HOME)
-
-Outputs (HDF5, one group per subject, datasets "lh", "rh" and optionally "dx")
-    thickness.fwhm{FWHM}.fsavg6.h5   (40,962 vertices per hemisphere)
-    thickness.fwhm{FWHM}.fsavg5.h5   (10,242 vertices per hemisphere)
-
-Subjects already present in the output file are skipped, so interrupted
-runs can be resumed. The fsaverage5 tables were then exported to the
-row-per-subject input tables used by SCSR (03_scsr).
-
-Usage
-    python resample_thickness.py --subjects-dir /path/to/subjects \
-        --id-file meta.csv --output-dir out/ [--fwhm 5]
+Usage:  python resample_thickness.py --subjects-dir /path/to/subjects \
+            --id-file meta.csv --output-dir out/ [--fwhm 5]
 """
 
 import argparse

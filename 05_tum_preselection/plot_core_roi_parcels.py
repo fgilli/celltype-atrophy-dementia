@@ -1,16 +1,9 @@
 """
-Atlas-style illustration of the core ROIs used in the TUM preselection.
+Shows the core regions of every diagnosis on the fsaverage5 surface
+(core parcels in red, parcel borders in black).
 
-For every diagnosis in preselect_atrophy_pattern.CONFIG["core_rois"], the
-Desikan-Killiany parcels of the core ROI are colored on the fsaverage5
-surface (all other parcels white, parcel borders black; lateral and medial
-views of both hemispheres).
-
-Output
-    {CONFIG["output_dir"]}/roi_maps/{diagnosis}_core_roi.png
-
-Usage
-    python plot_core_roi_parcels.py
+Output: outputs/tum_preselection/roi_maps/{diagnosis}_core_roi.png
+Usage:  python plot_core_roi_parcels.py
 """
 
 from pathlib import Path

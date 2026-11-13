@@ -1,28 +1,13 @@
 """
-Classification summary figure and table values.
+Summary figure of the classification: fold-wise balanced accuracy per task,
+cohort and feature set, with stars for the Holm-corrected comparisons against
+regional atrophy. Also prints and saves the numbers for the results table.
 
-Collects the nested-CV results (run_summary_all_tasks.json of
-classification_pipeline.py) and the feature-set tests
-(compare_feature_sets_ttest.py) of all cohorts and
+Needs classification_pipeline.py and compare_feature_sets_ttest.py to be run
+first. Cohorts without results are skipped.
 
-  * prints the mean +- SD balanced accuracy over the 50 outer folds per
-    task, cohort and feature set,
-  * prints the comparisons with regional atrophy (mean difference,
-    corrected 95% CI, p, Holm-adjusted p over the reported comparisons of
-    each cohort), recomputing the corrected t-test from the fold scores as
-    a consistency check,
-  * plots the fold-wise balanced accuracies with significance brackets
-    (* p < .05, ** p < .01, *** p < .001 after Holm correction); the dotted
-    line is chance level (1 / number of classes).
-
-Cohorts whose results are missing are skipped.
-
-Outputs (outputs/classification/)
-    fig8_classification_summary.pdf / .png
-    fig8_table6_values.csv
-
-Usage
-    python classification_summary_plot.py
+Output: outputs/classification/fig8_classification_summary.pdf / .png, fig8_table6_values.csv
+Usage:  python classification_summary_plot.py
 """
 import json
 from math import sqrt

@@ -1,45 +1,26 @@
 """
-Retrain the SCSR (Stochastic Cortical Self-Reconstruction) model.
+Training of the SCSR model (one model per hemisphere).
 
-Adapted from the original SCSR training code (Wachinger et al., Medical
-Image Analysis). An MLP denoising autoencoder is trained on fsaverage5
-cortical thickness of healthy UK Biobank subjects (FreeSurfer 7.2), one
-model per hemisphere:
+Adapted from the SCSR code of Wachinger et al. (Medical Image Analysis, 2026).
+Differences to the published setup: the cingulate parcels are kept (only
+"unknown" and "corpuscallosum" are removed), no dropout, 500 epochs, batch
+size 256 and the age/sex input is switched off. The model is trained on UK
+Biobank thickness maps (FreeSurfer 7.2, fsaverage5) with an 80/20 split, ADNI
+is only used to monitor the training.
 
-  * vertices of the parcels "unknown" and "corpuscallosum" are removed,
-  * thickness is standardized per vertex (StandardScaler fit on the
-    training split),
-  * during training, Gaussian jitter is added and a random fraction of the
-    vertices (corruption_rate_train) is masked with zeros; the MSE loss is
-    computed on the masked vertices only,
-  * optimizer AdamW with cosine-annealing learning-rate schedule,
-  * 80/20 split of the UK Biobank table (random_state=42) for training and
-    held-out testing; an external validation table (ADNI, CN and dementia)
-    is evaluated for monitoring only.
+The checkpoint with the lowest UKB test loss (bestLossUKB) is the one used in
+sample_scsr.py. sd_pop (SD of the residuals on the UKB test split) is saved
+for the z-scores.
 
-Three checkpoints are kept: lowest UKB test loss ("bestLossUKB", used for
-inference in sample_scsr.py), lowest UKB test + CN validation loss
-("bestLoss") and highest AD-ROI AUC on the validation table ("bestAUC").
-After training, the vertex-wise standard deviation of the reconstruction
-residuals on the UKB test split (sd_pop) is saved; it is used to turn
-residuals into deviation z-scores.
+Input:  training_configs/<config>.yaml and model/<network>.yaml
+        --train-table   UKB feather (age, sex, DX, ID, full ID, thickness...)
+        --val-table     ADNI feather (age, sex, DX, thickness...)
+        --aparc-labels  npy with the aparc name of every fsaverage5 vertex
+Output: checkpoints/, scaler/, variances/{run}_sd_pop.npy
 
-Inputs
-    training_configs/<config>.yaml   training hyperparameters
-    model/<network_config_file>      network architecture (layer list)
-    --train-table   UKB feather: age, sex, DX, ID, full ID, thickness...
-    --val-table     validation feather: age, sex, DX, thickness...
-    --aparc-labels  .npy with the aparc parcel name of every fsaverage5 vertex
-
-Outputs (relative to this folder)
-    checkpoints/{run}_{bestLossUKB,bestLoss,bestAUC}.pth (+ .csv, _conf.yaml)
-    scaler/UKB_stdScaler_{hemi}.joblib, scaler/UKB_AS_stdScaler_{hemi}.joblib
-    variances/{run}_sd_pop.npy
-
-Usage
-    python train_scsr.py training_config.yaml --hemi lh \
-        --train-table UKB_lh.feather --val-table ADNI_lh.feather \
-        --aparc-labels aparc_labels_10K_lh.npy [--run-name NAME] [--wandb]
+Usage:  python train_scsr.py training_config.yaml --hemi lh \
+            --train-table UKB_lh.feather --val-table ADNI_lh.feather \
+            --aparc-labels aparc_labels_10K_lh.npy [--run-name NAME] [--wandb]
 """
 
 import argparse

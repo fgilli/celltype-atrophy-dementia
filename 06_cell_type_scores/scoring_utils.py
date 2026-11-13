@@ -1,11 +1,4 @@
-"""
-Helper functions for the cell-type atrophy scores (compute_cell_type_scores.py).
-
-    load_cell_maps                 read the eight fsaverage5 cell-type maps
-    compute_weights                atrophy weights w_v = max(-z_v, 0) of one subject
-    compute_cn_reference_scores    CN-referenced z-scores of the cell-type scores
-                                   and the glial / vascular / neuronal composites
-"""
+"""Helper functions for compute_cell_type_scores.py."""
 
 import os
 

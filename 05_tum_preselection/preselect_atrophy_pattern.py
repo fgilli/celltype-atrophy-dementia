@@ -1,42 +1,25 @@
 """
-Semi-manual preselection of the TUM cohort by atrophy-pattern specificity.
+Semi-manual quality control of the TUM cohort.
 
-Applied to the SCSR deviation maps of the assembled TUM cohort
-(build_tum_dataset.py). Scores are computed once at CONFIG["selection_fwhm"]
-(5 mm) from the mean z-score of every Desikan-Killiany parcel (fsaverage5
-aparc; "unknown" and "corpuscallosum" excluded).
+The smoothed deviation maps (5 mm) are averaged per Desikan-Killiany parcel.
+Every patient gets two scores against the core regions of the diagnosis
+(CONFIG["core_rois"], sources in core_roi_sources.txt):
+    specificity     mean z outside - mean z inside the core regions
+    top-k overlap   share of the 8 most atrophic parcels that are core regions
+Patients in the lowest 20 % of specificity within their diagnosis or with an
+overlap below 0.25 are flagged. AD patients without subtype are scored against
+the AD + PCA regions, nfvPPA is not screened. All CN subjects are reviewed.
 
-Patients (AD, PCA, bvFTD, SD) are scored against a literature-based core
-ROI of their diagnosis (CONFIG["core_rois"], sources in
-core_roi_sources.txt):
-    Z_in, Z_out          mean z inside / outside the core ROI (hemispheres
-                         weighted by CONFIG["hemi_weights"])
-    specificity          Z_out - Z_in (positive = atrophy concentrated in the ROI)
-    topk_overlap_frac    fraction of the k most atrophic parcels that lie in the ROI
-A patient is flagged for manual review if the specificity is in the lowest
-CONFIG["specificity_flag_percentile"] % of the diagnosis or the top-k overlap
-is below CONFIG["topk_overlap_flag_threshold"]. AD patients without subtype
-are scored against the union of the AD and PCA ROIs. Diagnoses in
-CONFIG["pass_through_diagnoses"] (nfvPPA) have no ROI and are kept without
-review.
+    select  scores and flags (subject_scores.csv, flagged_for_review.csv) plus
+            renders of the flagged patients, all CN and 10 random unflagged patients
+    filter  after "manual_keep" (True/False) is filled in in flagged_for_review.csv:
+            writes the kept subjects to output_dir/filtered_dataset/
 
-All CN subjects are sent to manual review; their global burden and an IQR
-outlier flag are reported only to help sort the review.
+Input is the output folder of build_tum_dataset.py with a meta table
+(id, dx_family, subtype) in the same row order.
 
-Stages
-    1. select:  compute scores and flags, write subject_scores.csv,
-                flagged_for_review.csv and meta_annotated.csv, and render the
-                deviation maps of all flagged subjects, all CN subjects and a
-                random sample of unflagged patients for visual inspection.
-    2. (manual) fill in the column "manual_keep" (True/False) of
-                flagged_for_review.csv.
-    3. filter:  keep all unflagged subjects and the flagged subjects with
-                manual_keep = True; write the filtered metadata and z-score
-                arrays for all smoothing levels to output_dir/filtered_dataset/.
-
-Usage
-    python preselect_atrophy_pattern.py select
-    python preselect_atrophy_pattern.py filter --reviewed path/to/flagged_for_review.csv
+Usage:  python preselect_atrophy_pattern.py select
+        python preselect_atrophy_pattern.py filter --reviewed flagged_for_review.csv
 """
 
 import argparse
@@ -170,11 +153,7 @@ def get_meta():
 
 
 def load_zscore_array(hemi, fwhm):
-    """
-    Load the (n_subjects, 10242) z-score array for one hemi/fwhm.
-    Row i is assumed to correspond to row i of the shared meta table
-    (get_meta()) - raises if the row counts don't match.
-    """
+    """(n_subjects, 10242) z-scores of one hemisphere; rows have to match the meta table."""
     z = np.load(_zscore_path(hemi, fwhm))
     meta = get_meta()
     if z.shape[0] != len(meta):
@@ -203,12 +182,7 @@ def load_aparc_labels(hemi):
 
 
 def compute_parcel_table(hemi, fwhm):
-    """
-    Return a DataFrame (index = subject_id, row-order = shared meta order) of
-    mean z-score per aparc parcel for one hemisphere at a given FWHM, columns
-    named "{hemi}_{parcel}". Excluded parcels (unknown, corpuscallosum, ...)
-    are dropped.
-    """
+    """Mean z-score per DK parcel for one hemisphere (columns "{hemi}_{parcel}", index = subject id)."""
     z = load_zscore_array(hemi, fwhm)
     meta = get_meta()
     labels, name_to_label = load_aparc_labels(hemi)
@@ -236,12 +210,7 @@ def compute_parcel_table(hemi, fwhm):
 
 
 def build_combined_parcel_table(fwhm):
-    """
-    Concatenate lh + rh parcel tables for one FWHM level. Both are built from
-    the same shared meta table, so they are already row-aligned (same
-    subject_id order) - this is verified, not just assumed.
-    Returns (parcel_df, meta_df).
-    """
+    """lh and rh parcel tables next to each other. Returns (parcel_df, meta_df)."""
     lh_df = compute_parcel_table("lh", fwhm)
     rh_df = compute_parcel_table("rh", fwhm)
 
@@ -286,19 +255,8 @@ def _merged_core_names(members):
 
 
 def score_diseased_group(parcel_df, subject_ids, diagnosis, core_names=None, weight_key=None):
-    """
-    Compute Z_in / Z_out / Z_global / specificity / topk_overlap for one
-    diagnostic group's subjects, using that diagnosis's core ROI.
-
-    core_names: override the ROI list normally looked up via
-        CONFIG["core_rois"][diagnosis] (used for merged-ROI scoring when the
-        specific subtype is unknown, see CONFIG["unknown_subtype_merge"]).
-    weight_key: override which CONFIG["hemi_weights"] entry to use (defaults
-        to `diagnosis`; relevant when `diagnosis` isn't itself a hemi_weights
-        key, e.g. a merged family label).
-
-    Returns a DataFrame indexed by subject_id.
-    """
+    """Z_in, Z_out, specificity, top-k overlap and review flags for the patients of one diagnosis.
+    core_names / weight_key replace the CONFIG entries (used for AD without subtype)."""
     core_names = CONFIG["core_rois"][diagnosis] if core_names is None else core_names
     weight_key = diagnosis if weight_key is None else weight_key
     hemis = CONFIG["hemis"]
@@ -361,15 +319,8 @@ def score_diseased_group(parcel_df, subject_ids, diagnosis, core_names=None, wei
 
 
 def score_cn_group(parcel_df, subject_ids):
-    """
-    Burden + IQR context for CN subjects.
-
-    Every CN subject gets review_flag=True (all healthy subjects go to
-    manual review - automatic IQR-outlier detection alone wasn't reliable
-    enough to trust as a filter). The burden/fence/median columns are kept
-    purely as sorting/context aids for that review; `iqr_outlier` records
-    what the old automatic rule would have flagged, for reference only.
-    """
+    """Global burden and IQR outlier flag of the CN subjects. Only used to sort the
+    review, every CN subject is inspected."""
     sub = parcel_df.loc[subject_ids]
     all_cols = [c for c in sub.columns]
 
@@ -532,19 +483,7 @@ def run_selection():
 
 
 def _camera_for_view(mesh, hemi, view):
-    """
-    Compute a camera position looking along the x-axis at the mesh center,
-    from the side appropriate for {hemi} x {view}.
-
-    Assumes FreeSurfer RAS-like coordinates where x separates hemispheres
-    (this is the standard fsaverage5 convention). "lateral" = viewed from
-    the hemisphere's own outer side (what you'd see looking at the brain
-    from outside the head); "medial" = viewed from the midline (the cut
-    surface facing the other hemisphere).
-
-    If your first render comes out mirrored (e.g. lateral view actually
-    shows the medial surface), flip CONFIG["render_lateral_sign"] to -1.
-    """
+    """Camera on the x-axis looking at the lateral or medial side of one hemisphere."""
     center = np.array(mesh.center)
     bounds = mesh.bounds  # (xmin,xmax,ymin,ymax,zmin,zmax)
     diag = np.linalg.norm([bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]])
@@ -560,12 +499,7 @@ def _camera_for_view(mesh, hemi, view):
 
 
 def render_subjects(subject_ids, fwhm, render_dir_name=None, log_label="render_subjects"):
-    """
-    Render one PNG per subject: a 2x2 grid of
-        [lh lateral, lh medial]
-        [rh lateral, rh medial]
-    Skipped gracefully if pyvista or the surface files are unavailable.
-    """
+    """One PNG per subject (lh/rh x lateral/medial). Skipped if pyvista or the surfaces are missing."""
     try:
         import pyvista as pv
     except ImportError:
@@ -690,18 +624,12 @@ def render_unflagged_qc(scores, fwhm):
 
 
 # =============================================================================
-# Stage 2: propagate scores to the other FWHM levels
+# Annotated meta table
 # =============================================================================
 
 
 def propagate_scores(scores=None):
-    """
-    Merge subject_scores.csv onto the single shared meta table, producing one
-    meta_annotated.csv for reference/inspection. (Since there is only one
-    meta table, this is a straightforward merge - the FWHM-scoping decision
-    that matters happens in apply_final_filter, via
-    CONFIG["propagate_to_other_fwhm"].)
-    """
+    """Write meta_annotated.csv (meta table with the scores and flags)."""
     out_dir = Path(CONFIG["output_dir"])
     scores_path = out_dir / "subject_scores.csv"
     if scores is None:
@@ -733,19 +661,9 @@ def propagate_scores(scores=None):
 
 
 def apply_final_filter(reviewed_csv_path):
-    """
-    reviewed_csv_path: the flagged_for_review.csv, after you've filled in a
-    'manual_keep' column (True/False). Unreviewed flagged subjects (blank
-    manual_keep) are excluded by default (conservative) with a warning.
-
-    CONFIG["propagate_to_other_fwhm"] controls scope:
-      - True  -> filter the .npy arrays for ALL fwhm_levels (both hemis)
-      - False -> filter only the .npy arrays for selection_fwhm
-
-    Since there is a single shared meta table, exactly one filtered meta CSV
-    is written (the row mask is identical for every hemi/fwhm - it's a
-    subject-level decision).
-    """
+    """Keep the unflagged subjects and the flagged ones with manual_keep = True
+    (flagged subjects without a decision are dropped) and write the filtered
+    meta table and z-score arrays."""
     out_dir = Path(CONFIG["output_dir"])
     scores_path = out_dir / "subject_scores.csv"
     scores = pd.read_csv(scores_path)

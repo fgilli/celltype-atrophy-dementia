@@ -1,22 +1,12 @@
 """
-Group-average SCSR deviation maps on the fsaverage5 surface.
+Group-average deviation maps on fsaverage5.
 
-For every diagnostic group (column --group-col of the metadata), the
-vertex-wise mean of the thinning-only deviation maps, min(z, 0), is
-rendered in lateral and medial views of both hemispheres (color range
--2 to 0, FWHM = 5 mm maps).
+Mean of min(z, 0) over all subjects of a group, shown in lateral and medial
+view of both hemispheres (color range -2 to 0).
 
-Inputs
-    deviation maps   data/deviation_maps/{cohort}/zscores.fwhm5.fsavg5.{lh,rh}.npy
-    metadata         data/metadata/meta_{COHORT}.csv (row-aligned)
-    surfaces         data/fsaverage5/surf/{lh,rh}.pial
-
-Output
-    outputs/{cohort}/group_mean_maps/{group}_group_mean.png
-
-Usage
-    python group_mean_maps.py --profile tum --group-col Subtype
-    python group_mean_maps.py --profile nacc --group-col DX_family
+Output: outputs/{profile}/group_mean_maps/{group}_group_mean.png
+Usage:  python group_mean_maps.py --profile tum --group-col Subtype
+        python group_mean_maps.py --profile nacc --group-col DX_family
 """
 
 import argparse

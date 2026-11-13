@@ -1,31 +1,18 @@
 """
-Assemble the TUM cohort from its three source datasets.
+Puts the TUM cohort together from its three source datasets (TUM_342,
+small_ds, CTh_train), which partly contain the same subjects.
 
-The TUM cohort combines three smaller, partly overlapping Klinikum rechts
-der Isar datasets (TUM_342, small_ds, CTh_train), each with its own
-metadata table and its own deviation-map arrays
-zscores.fwhm{fwhm}.fsavg5.{hemi}.npy (row i = row i of the metadata table).
-total.csv lists every unique subject once (column "id").
+total.csv lists every subject once (column "id"). Each id is looked up in
+TUM_342 first (PTID without "_anat_hc" / "_ses-<n>_T1w"; "#N" ids are
+"NM_FTD_{N:02d}"), then in small_ds and then in CTh_train, and the matching
+row of the deviation maps is copied. Ids that are not found are written to
+tum_unmatched.csv.
 
-For every id in total.csv, exactly one source row is resolved:
-  1. "#N" ids are looked up only in TUM_342 as PTID "NM_FTD_{N:02d}".
-  2. Otherwise TUM_342 is searched first (it has priority for subjects that
-     occur in more than one dataset); its PTIDs are compared after removing
-     the suffixes "_anat_hc" and "_ses-<n>_T1w".
-  3. Then small_ds and finally CTh_train (plain PTID match).
-  4. Unresolved ids are written to tum_unmatched.csv and skipped.
+Output (data/tum_sources/combined):
+    zscores.fwhm{fwhm}.fsavg5.{hemi}.npy
+    tum_rows.fwhm{fwhm}.fsavg5.{hemi}.npy    [total_id, dataset, ptid, source_row]
 
-The matching rows are stacked in total.csv order for every smoothing level
-and hemisphere.
-
-Outputs (CONFIG["output_dir"])
-    zscores.fwhm{fwhm}.fsavg5.{hemi}.npy       (n_subjects, 10242)
-    tum_rows.fwhm{fwhm}.fsavg5.{hemi}.npy      row-aligned provenance
-                                               [total_id, dataset, ptid, source_row]
-    tum_unmatched.csv                          ids that could not be resolved
-
-Usage
-    python build_tum_dataset.py
+Usage:  python build_tum_dataset.py
 """
 
 import csv

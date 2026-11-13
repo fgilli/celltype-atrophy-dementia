@@ -1,33 +1,26 @@
 """
-Heterogeneity of regional atrophy patterns (barcode plots).
+Heterogeneity of regional atrophy (barcode plots).
 
-Adapts the spatial-heterogeneity analysis of Thalhammer et al., Nat Commun
-2025 (https://doi.org/10.1038/s41467-025-63967-1; code:
-https://github.com/Melissa1909/preterm-brain-heterogeneity, file
-code/spatial_heterogeneity.py) to the regional atrophy masses of the 34
-Desikan-Killiany parcels (hemispheres averaged).
+Follows Thalhammer et al., Nat Commun 2025
+(https://github.com/Melissa1909/preterm-brain-heterogeneity,
+code/spatial_heterogeneity.py). The functions marked "Thalhammer et al." are
+taken from there.
 
-Per cohort:
-  1. every parcel mass is converted into an empirical centile relative to
-     the CN group of the same cohort (to_centile_scores),
-  2. values below the 5th or above the 95th CN centile are coded as
-     extranormal (1), all others as 0 (binarize_extranormal),
-  3. per diagnostic family and per clinical subtype, the binary
-     subject x parcel matrix is plotted (barcode), the subject x subject
-     Spearman correlation matrix is computed, and its row means are
-     summarized (with and without the self-correlation).
+Per cohort the atrophy masses of the 34 DK parcels (mean of lh and rh) are
+converted into centiles relative to the CN group. Parcels below 0.05 or above
+0.95 count as extranormal. For every diagnosis / subtype the binary
+subject x parcel matrix is plotted and the Spearman correlation between all
+pairs of subjects is computed. The row means include the self-correlation as
+in the original code, the values without it are saved as well.
 
-Functions marked "Thalhammer et al." are taken from the original code.
+Needs the output of 06_cell_type_scores/compute_cell_type_scores.py.
 
-Outputs (CONFIG["output_dir"])
+Output (outputs/heterogeneity):
     {cohort}_{grouping}_{group}_binarized.png / _corrmatrix.png
-    heterogeneity_summary.csv     mean/median within-group Spearman rho,
-                                  % of subjects with any extranormal parcel
-    parcel_prevalence.csv         % of subjects with an extranormal value per parcel
+    heterogeneity_summary.csv, parcel_prevalence.csv
     thesis_fig6_barcodes_main.pdf, thesis_supp_barcodes.pdf, thesis_supp_corr.pdf
 
-Usage
-    python atrophy_heterogeneity.py
+Usage:  python atrophy_heterogeneity.py
 """
 
 import os

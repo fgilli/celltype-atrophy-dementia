@@ -1,35 +1,18 @@
-# ============================================================
-# make_cell_type_maps.R
+# Builds the eight cell-type maps on fsaverage6.
 #
-# Builds the eight cell-type maps on the fsaverage6 surface.
+# For every cell type, the marker genes (Seidlitz et al. 2020, Supplementary
+# Data 5) that are present in the mRNA expression maps of Ecker et al. are
+# z-scored across vertices and then averaged per vertex.
 #
-# Inputs
-#   1) Vertex-wise interpolated mRNA expression maps of Ecker et al.
-#      (lh.rh.mRNA.fsavg6.fwhm5.rda; list with $lh and $rh, each a
-#      genes x vertices matrix).
-#   2) Cell-type marker gene sets of Seidlitz et al. (2020),
-#      Supplementary Data 5 (xlsx with columns Type, Paper, Cluster,
-#      Class and one column per marker gene).
+# Input:  lh.rh.mRNA.fsavg6.fwhm5.rda   list with $lh and $rh (genes x vertices)
+#         Seidlitz xlsx                 columns Type, Paper, Cluster, Class + marker genes
+# Output: <out_prefix>_lh.feather, <out_prefix>_rh.feather   one column per cell type
+#         <out_prefix>_metadata.json                         marker overlap per cell type
 #
-# Method
-#   For every cell type, the expression map of each marker gene is
-#   z-scored across vertices and the cell-type map is the vertex-wise
-#   mean over all marker genes that are present in the expression data.
+# The fsaverage5 maps used in the Python scripts (fsavg5_{hemi}_{cell}.npy)
+# are the first 10,242 vertices of these maps.
 #
-# Outputs
-#   <out_prefix>_lh.feather, <out_prefix>_rh.feather
-#       one row per vertex, column "vertex" (0-based) plus one column
-#       per cell type
-#   <out_prefix>_metadata.json
-#       number of vertices/genes and marker overlap per cell type
-#
-# The fsaverage6 maps were subsequently reduced to the fsaverage5 (ico5)
-# vertex set and stored as fsavg5_{hemi}_{cell}.npy for the downstream
-# Python pipeline.
-#
-# Usage
-#   Rscript make_cell_type_maps.R [mRNA_rda] [seidlitz_xlsx] [out_prefix]
-# ============================================================
+# Usage:  Rscript make_cell_type_maps.R [mRNA_rda] [seidlitz_xlsx] [out_prefix]
 
 suppressPackageStartupMessages({
   library(arrow)

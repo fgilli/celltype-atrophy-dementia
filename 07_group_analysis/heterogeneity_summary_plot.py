@@ -1,19 +1,9 @@
 """
-Summary figure of the within-group similarity of atrophy patterns.
+Plots the mean within-group Spearman rho from heterogeneity_summary.csv
+(atrophy_heterogeneity.py) for all groups of the three cohorts.
 
-Plots the mean within-group Spearman rho of the binary extranormal-parcel
-vectors (heterogeneity_summary.csv of atrophy_heterogeneity.py) for all
-diagnostic families and clinical subtypes of the three cohorts. By default
-the row means include the self-correlation, as in Thalhammer et al.; set
-CONFIG["rho_column"] = "mean_spearman_rho_excl_self" for the values
-without it.
-
-Outputs (CONFIG["out_dir"])
-    fig7_heterogeneity_summary.pdf / .png
-    fig7_plotted_values.csv
-
-Usage
-    python heterogeneity_summary_plot.py
+Output: outputs/heterogeneity/fig7_heterogeneity_summary.pdf / .png, fig7_plotted_values.csv
+Usage:  python heterogeneity_summary_plot.py
 """
 from pathlib import Path
 

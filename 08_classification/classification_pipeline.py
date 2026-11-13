@@ -1,48 +1,30 @@
 """
-Decision-tree classification of diagnoses from atrophy-derived features.
+Decision-tree classification with nested cross-validation.
 
-Tasks (per cohort profile)
-    01_healthy_vs_sick              CN vs. all patients ("sick"), from DX_family
-    02_ftd_subtype_classification   FTD patients only, classified by subtype
-                                    (bvFTD vs. SD; bvFTD vs. SD vs. nfvPPA for
-                                    the profile nifd_3class); skipped for NACC
+Tasks:         healthy vs. sick (CN vs. all patients)
+               FTD subtypes (bvFTD vs. SD)
+Feature sets:  atrophy_regional   atrophy mass of the 8 DK region groups
+               celltype           the 8 normalized cell-type scores
+               combined           cell-type scores + total atrophy mass
+               (lh and rh are averaged)
 
-Feature sets (fsaverage5 scores from 06_cell_type_scores, FWHM 5 mm)
-    atrophy_regional   atrophy mass of the 8 Desikan-Killiany region groups
-    celltype           the 8 normalized cell-type scores S_c
-    combined           the 8 cell-type scores + total atrophy mass
-Left and right hemisphere are averaged element-wise (hemi_mode "average";
-"concat" concatenates them instead).
+A single tree with class_weight="balanced" is tuned over max_depth {1, 2, 3}
+and min_samples_leaf {3, 5, 7, 10} in an inner 5-fold CV. The outer loop is a
+5-fold CV repeated 10 times (seed 42), so all feature sets are evaluated on
+the same 50 folds. A final tree is fitted on all subjects, only for
+interpretation (rules, plot, feature importances).
 
-Subjects whose subtype is listed in "excluded_subtypes" (e.g. nfvPPA) are
-removed from all tasks before anything else is done.
+Profiles: tum and nifd leave out nfvPPA, nacc has no subtype task and
+nifd_3class is the bvFTD vs. SD vs. nfvPPA task (only its subtype task is
+used).
 
-Model and evaluation
-    * a single DecisionTreeClassifier with class_weight="balanced";
-      max_depth and min_samples_leaf are tuned by GridSearchCV (5-fold
-      stratified inner CV, balanced accuracy)
-    * nested cross-validation: 5 outer stratified folds x 10 repetitions
-      (RepeatedStratifiedKFold, random_state=42); hyperparameters are tuned
-      inside every outer training fold only. The 50 outer-fold balanced
-      accuracies are the reported performance. Because the folds depend
-      only on the labels and the random state, all feature sets of a task
-      share identical folds, which compare_feature_sets_ttest.py relies on.
-    * final tree: the same tuning procedure applied once to all subjects of
-      the task; used for interpretation only (rules, plot, feature
-      importances, leaf report). Its node labels are the class-weighted
-      predictions of the tree; the plotted counts are raw subject counts.
+Needs the output of 06_cell_type_scores/compute_cell_type_scores.py.
 
-Outputs (<out_dir>/<task>_<feature_set>/<hemi_mode>/)
-    nested_cv/nested_cv_folds.csv        per (repeat, fold): n, best params, balanced accuracy
-    nested_cv/oof_predictions.csv        out-of-fold prediction per subject and repetition
-    nested_cv/confusion_matrix.csv, classification_report.json   (repetition 0)
-    nested_cv/nested_cv_summary.json
-    feature_importances.csv, *_tree_rules_*.txt, *_tree_plot_*.png,
-    leaf_confidence_report.csv, leaf_assignments_full.csv, run_summary.json
-plus <out_dir>/<task>_deltas.json and <out_dir>/run_summary_all_tasks.json.
+Output: outputs/classification/{profile}/{task}_{feature_set}/average/
+            nested_cv/   fold scores, out-of-fold predictions, confusion matrix
+            tree rules, tree plot, feature importances, leaf report (final tree)
 
-Usage
-    python classification_pipeline.py --profile tum   (tum | nifd | nifd_3class | nacc)
+Usage:  python classification_pipeline.py --profile tum   (tum | nifd | nifd_3class | nacc)
 """
 
 import argparse

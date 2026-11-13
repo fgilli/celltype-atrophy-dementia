@@ -1,18 +1,10 @@
 """
-Group-mean deviation maps with the core ROI outlined (preselection check).
+Group-mean deviation maps (thinning only) per diagnosis with the core regions
+outlined in black, to check that the chosen core regions fit the data.
+Paths and settings come from preselect_atrophy_pattern.CONFIG.
 
-For every diagnosis in preselect_atrophy_pattern.CONFIG["core_rois"], the
-vertex-wise mean of the thinning-only deviation maps (min(z, 0)) at the
-selection FWHM is rendered on fsaverage5 (lateral and medial views of both
-hemispheres) with the literature-based core ROI outlined in black. Used to
-check whether the empirical atrophy pattern of the TUM cohort matches the
-chosen ROI.
-
-Output
-    {CONFIG["output_dir"]}/core_roi_check/{diagnosis}_group_mean_vs_core_roi.png
-
-Usage
-    python plot_group_mean_vs_core_roi.py
+Output: outputs/tum_preselection/core_roi_check/{diagnosis}_group_mean_vs_core_roi.png
+Usage:  python plot_group_mean_vs_core_roi.py
 """
 
 from pathlib import Path

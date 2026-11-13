@@ -1,36 +1,19 @@
 """
-Compute subject-specific SCSR deviation maps (vertex-wise z-scores).
+SCSR inference: deviation z-scores for all subjects of a cohort.
 
-Adapted from the original SCSR inference code. For every subject of a
-cohort (TUM, NIFD or NACC), the retrained model of one hemisphere
-reconstructs the fsaverage5 thickness map num_predictions times, each time
-from a different random subset of visible vertices (corruption_rate = 0.8
-of the vertices masked). For every vertex, only the reconstructions in
-which the vertex was masked are kept and their 95th percentile is used as
-the subject-specific expected thickness. The deviation z-score is
+Adapted from the SCSR code of Wachinger et al. Every thickness map is
+reconstructed 100 times with 80 % of the vertices masked. The 95th percentile
+of the predictions of a vertex (only runs where it was masked) is the
+reference R, and z = (Y - R) / sd_pop. Vertices of "unknown" and
+"corpuscallosum" are not reconstructed and are -1 in the output.
 
-    z = (observed thickness - expected thickness) / sd_pop
+Input:  --input-table   feather with ID, age, sex, DX, thickness... (fsaverage5)
+        --aparc-labels  npy with the aparc name of every fsaverage5 vertex
+        --run-name      training run (config, checkpoint and sd_pop are found by it)
+Output: zscores_ / predictions_ / targets_corr0.8_perc0.95.npy in --output-dir
 
-with sd_pop the vertex-wise residual SD of the UK Biobank test split
-(written by train_scsr.py). Negative values indicate thinning. Vertices of
-the parcels "unknown" and "corpuscallosum" are not reconstructed and set
-to -1 in the output.
-
-Inputs
-    --input-table   feather with columns ID, age, sex, DX, thickness...
-                    (fsaverage5, one row per subject)
-    --aparc-labels  .npy with the aparc parcel name of every fsaverage5 vertex
-    --run-name      name of the training run (checkpoints/{run}_conf.yaml,
-                    checkpoints/{run}_{checkpoint}.pth, variances/{run}_sd_pop.npy)
-
-Outputs (in --output-dir)
-    zscores_corr{rate}_perc{percentile}.npy       (n_subjects, 10242)
-    predictions_corr{rate}_perc{percentile}.npy   expected thickness
-    targets_corr{rate}_perc{percentile}.npy       observed thickness
-
-Usage
-    python sample_scsr.py --hemi lh --run-name RUN --input-table nifd_lh.feather \
-        --aparc-labels aparc_labels_10K_lh.npy --output-dir samples/nifd_lh
+Usage:  python sample_scsr.py --hemi lh --run-name RUN --input-table nifd_lh.feather \
+            --aparc-labels aparc_labels_10K_lh.npy --output-dir samples/nifd_lh
 """
 
 import argparse
@@ -139,7 +122,7 @@ def main():
     else:
         as_norm = np.zeros((n_subjects, 2))
     X_norm = np.hstack((as_norm, scaler.transform(X)))
-    loader = DataLoader(TensorDataset(torch.tensor(X_norm, dtype=torch.float32)), batch_size=n_subjects, shuffle=False)
+    loader = DataLoader(TensorDataset(torch.tensor(X_norm, dtype=torch.float32)), batch_size=32, shuffle=False)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     network_config["layers"][0]["in_features"] = X_norm.shape[1]

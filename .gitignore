@@ -1,0 +1,7 @@
+.DS_Store
+__pycache__/
+data/
+outputs/
+03_scsr/checkpoints/
+03_scsr/scaler/
+03_scsr/variances/

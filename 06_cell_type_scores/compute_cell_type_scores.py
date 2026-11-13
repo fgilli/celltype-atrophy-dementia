@@ -1,48 +1,22 @@
 """
-Atrophy masses and cell-type atrophy scores per subject.
+Atrophy masses and cell-type scores per subject.
 
-For every dataset, hemisphere and smoothing level, each subject's SCSR
-deviation map z (fsaverage5, 10,242 vertices) is turned into atrophy
-weights w_v = max(-z_v, 0) (thinning only). From these weights:
+For every subject and hemisphere the smoothed deviation map z is turned into
+atrophy weights w = max(-z, 0). From these:
+    atrophy mass          sum of w (total, per DK region group (8), per DK parcel (34))
+    raw cell-type score   sum of cell map * w
+    normalized score      raw score / atrophy mass
+    CN-referenced score   z-score against the CN group of the same cohort,
+                          plus glial / vascular / neuronal composites
 
-    atrophy mass        M   = sum_v w_v
-    regional masses         sum of w_v within each of the 8 Desikan-Killiany
-                            region groups (DK_GROUPS) and within each of the
-                            34 DK parcels ("unknown" and "corpuscallosum"
-                            excluded)
-    raw cell-type score R_c = sum_v C_{c,v} w_v
-    normalized score    S_c = R_c / M  (atrophy-weighted mean of the
-                            cell-type map; NaN if M = 0)
+Input:  data/deviation_maps/{ds}/zscores.fwhm{fwhm}.fsavg5.{hemi}.npy
+        data/metadata/meta_{DS}.csv   (same row order, columns AGE, SEX, DX_family)
+        data/cell_maps/fsavg5_{hemi}_{cell}.npy
+        data/fsaverage5/label/{hemi}.aparc.annot
+Output: outputs/{ds}/scores/        score arrays (.npy) and their column names
+        outputs/{ds}/cn_reference/  CN reference table and subject-level csv
 
-with C the eight cell-type maps (astrocytes, endothelial, microglia, OPC,
-oligodendrocytes, excitatory and inhibitory neurons, pericytes). The
-normalized scores are then expressed relative to the CN subjects of the
-same dataset (CN-referenced z-scores and the glial / vascular / neuronal
-composites, see scoring_utils.compute_cn_reference_scores).
-
-Inputs (paths in DATASETS / CELL_DIR / ANNOT_DIR)
-    deviation maps     {zmap_dir}/zscores.fwhm{fwhm}.fsavg5.{hemi}.npy
-    metadata           CSV row-aligned with the deviation maps, with the
-                       columns AGE, SEX and DX_FAMILY (case-insensitive)
-    cell-type maps     {CELL_DIR}/fsavg5_{hemi}_{cell}.npy
-    DK annotation      {ANNOT_DIR}/{hemi}.aparc.annot (fsaverage5)
-
-Outputs ({out_dir}/scores and {out_dir}/cn_reference/fwhm{fwhm}/{hemi})
-    {ds}_{hemi}_scores_norm.fwhm{fwhm}.npy        (N, 8)  normalized scores S_c
-    {ds}_{hemi}_scores_raw.fwhm{fwhm}.npy         (N, 8)  raw scores R_c
-    {ds}_{hemi}_scores_norm_all.fwhm{fwhm}.npy    (N, 9)  S_c + atrophy mass
-    {ds}_{hemi}_atrophy.fwhm{fwhm}.npy            (N,)    atrophy mass M
-    {ds}_{hemi}_atrophy_regional.fwhm{fwhm}.npy   (N, 8)  region-group masses
-    {ds}_{hemi}_atrophy_dk.fwhm{fwhm}.npy         (N, 34) parcel masses
-    {ds}_kept_rows.npy                            metadata rows kept after exclusions
-    feature_names.npy, feature_names_all.npy, atrophy_regional_names.npy,
-    atrophy_dk_names.npy                          column names of the arrays above
-    {ds}_CN_reference_table.csv                   CN mean/SD and group means
-    {ds}_subject_level_deviation_scores.csv       per subject: scores, CN z-scores,
-                                                  composites
-
-Usage
-    python compute_cell_type_scores.py [--datasets tum nifd nacc]
+Usage:  python compute_cell_type_scores.py [--datasets tum nifd nacc]
 """
 
 import argparse

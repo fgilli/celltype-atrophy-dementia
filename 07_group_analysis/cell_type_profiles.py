@@ -1,26 +1,15 @@
 """
-CN-referenced cell-type profiles of the diagnostic groups (lollipop plots).
+Lollipop plots of the CN-referenced cell-type scores.
 
-Reads the subject-level deviation scores written by
-06_cell_type_scores/compute_cell_type_scores.py and creates, per cohort and
-hemisphere:
+One panel per group (diagnostic family or subtype) and one row per cell type
+or composite. Points are subjects, the diamond is the group mean and the gray
+band is +-1 SD of the CN group. Also writes the share of subjects within
++-1 CN SD per group and a small demographics table.
 
-  * lollipop plots of the eight CN-referenced cell-type scores ({cell}_cn_z)
-    and of the three composites (glial, vascular, neuronal), faceted by
-    diagnostic family (DX_family) and by clinical subtype; every point is
-    one subject, the diamond is the group mean, the gray band is +-1 SD of
-    the CN group and all panels share one x-axis,
-  * "in-band" tables: number and percentage of subjects within +-1 CN SD
-    and the group mean for every group and score,
-  * a demographic summary table (n, age, sex) per diagnostic family.
+Needs the output of 06_cell_type_scores/compute_cell_type_scores.py.
 
-Outputs ({output_dir}/plots and {output_dir}/tables)
-    lollipop_{cell|composite}_{family|subtype}_{ds}_{hemi}.png
-    {ds}_in_band_stats_{cell|composite}_{family|subtype}.csv
-    {ds}_demographics.csv
-
-Usage
-    python cell_type_profiles.py --profile tum      (tum | nifd | nacc)
+Output: outputs/{profile}/group_profiles/plots and /tables
+Usage:  python cell_type_profiles.py --profile tum      (tum | nifd | nacc)
 """
 
 import argparse

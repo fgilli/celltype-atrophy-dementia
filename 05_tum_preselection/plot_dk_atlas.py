@@ -1,18 +1,9 @@
 """
-Reference render of the Desikan-Killiany parcellation on fsaverage5.
+Labeled render of the Desikan-Killiany atlas on fsaverage5. Used as a look-up
+when choosing the core regions.
 
-Every parcel gets its own color and is labeled with its name (lateral and
-medial views of both hemispheres, labels only for parcels facing the
-camera), plus unlabeled anterior, posterior, superior and inferior views of
-the whole brain. Used as a look-up chart when defining the core ROIs of the
-TUM preselection. Paths and settings are taken from
-preselect_atrophy_pattern.CONFIG.
-
-Output
-    {CONFIG["output_dir"]}/dk_atlas_reference.png
-
-Usage
-    python plot_dk_atlas.py
+Output: outputs/tum_preselection/dk_atlas_reference.png
+Usage:  python plot_dk_atlas.py
 """
 
 from pathlib import Path
@@ -67,15 +58,8 @@ def _color_mesh_by_parcel(mesh, labels, name_to_label, name_to_idx):
 
 
 def _parcel_label_anchors(mesh, labels, name_to_label):
-    """
-    One on-surface anchor point per parcel, used for both the label position
-    and the facing-camera test. Using the plain mean of member vertices can
-    land inside a fold for buried regions (e.g. transversetemporal, tucked
-    into the Sylvian fissure) since the mean of two opposing fold walls is
-    an interior point, not a surface point. Instead we use the *medoid*:
-    the actual member vertex closest to the mean, which is guaranteed to
-    lie on the mesh surface.
-    """
+    """Label position per parcel: the parcel vertex closest to the parcel mean
+    (the mean itself can lie inside a fold)."""
     exclude = set(CONFIG["exclude_parcels"])
     anchors = {}
     for name, lbl in name_to_label.items():
@@ -92,11 +76,7 @@ def _parcel_label_anchors(mesh, labels, name_to_label):
 
 
 def _facing_parcel_names(mesh, labels, name_to_label, direction_sign):
-    """
-    Names of parcels whose average vertex-normal points towards the camera
-    for a lateral/medial view (camera looks along the x-axis only), so each
-    panel only labels the side of the hemisphere actually visible there.
-    """
+    """Parcels whose mean normal points towards the camera; only these are labeled in a view."""
     exclude = set(CONFIG["exclude_parcels"])
     normals = mesh.point_data["Normals"]
     facing = []

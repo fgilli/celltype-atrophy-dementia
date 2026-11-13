@@ -1,33 +1,14 @@
 """
-Statistical comparison of feature sets: corrected repeated k-fold t-test.
+Compares the feature sets of classification_pipeline.py with the corrected
+resampled t-test (Nadeau & Bengio, 2003).
 
-Within one run of classification_pipeline.py, all feature sets of a task
-are evaluated on identical outer folds (verified here via
-oof_predictions.csv). For every reported comparison, the paired fold
-differences
+celltype and combined are each tested against atrophy_regional on the 50
+paired fold differences d in balanced accuracy:
+    t = mean(d) / sqrt((1/50 + n_test/n_train) * var(d)),   df = 49
+The p-values are Holm-corrected over the comparisons of one cohort.
 
-    d_rk = balanced_accuracy_B(r, k) - balanced_accuracy_A(r, k)
-
-over the 5 x 10 outer folds are tested with the corrected repeated k-fold
-t-test of Nadeau & Bengio (2003), as in the scikit-learn example
-"Statistical comparison of models using grid search":
-
-    corrected var = var(d, ddof=1) * (1 / (k * r) + n_test / n_train)
-    t = mean(d) / sqrt(corrected var),  df = k * r - 1
-
-Feature set A is atrophy_regional (reference), B is celltype and combined.
-Holm (and Benjamini-Hochberg) adjustment is applied within each run over
-exactly the comparisons that pass the filters (tasks, hemi_modes), i.e.
-over the comparisons reported in the thesis (TUM / NIFD: 2 tasks x 2
-comparisons, NACC: 1 x 2).
-
-Outputs (CONFIG["out_dir"])
-    feature_set_ttest_results.csv
-    feature_set_paired_fold_differences_<feature_b>.csv
-    feature_set_ttest_config.json
-
-Usage
-    python compare_feature_sets_ttest.py --profile tum    (tum | nifd | nifd_3class | nacc)
+Output: outputs/classification/significance/{profile}_reported_comparisons_ttest/
+Usage:  python compare_feature_sets_ttest.py --profile tum   (tum | nifd | nifd_3class | nacc)
 """
 
 import argparse
